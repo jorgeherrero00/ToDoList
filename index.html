@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div id="app">
+
+        <input type="text" v-model="texto" @keyup.enter="addTarea">
+
+        <div>
+            <label>
+                <input type="checkbox" v-model="mostrarFiltro"> Mostrar Filtro
+            </label>
+            <input v-if="mostrarFiltro" type="text" v-model="filtro" placeholder="Filtrar por nombre">
+            <ul>
+              <li v-for="(tarea, pos) in tareasFiltradas" :key="tarea.fecha">
+                <button @click="marcarHecha(pos)">Marcar Hecha</button>
+                <span :class="{ completada: tarea.completada }">{{ tarea.texto }} Prioridad: {{tarea.prioridad}}</span>
+                <button @click="cambiarPrioridad(pos, 'normal')">Prioridad Normal</button>
+                <button @click="cambiarPrioridad(pos, 'alta')">Prioridad Alta</button>
+                <button @click="borrar(pos)">Borrar</button>
+            </li>
+            
+          </ul>
+          
+          
+          <p v-if="tareas.length">Tienes un total de: {{ tareas.length }} tareas, de las cuales {{ tareasCompletadas }} están completadas</p>
+
+        </div>
+
+        <button @click="addTarea">Añadir</button>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+      
+        createApp({
+          data() {
+            return {
+              texto: '',
+              tareas: [],
+              filtro: '',
+              mostrarFiltro: false,
+            };
+          },
+          methods: {
+            addTarea() {
+                const nuevaTarea = {
+                    texto: this.texto,
+                    prioridad: "alta",
+                    fecha: Date.now(),
+                    completada: false,
+                };
+                this.tareas.push(nuevaTarea);
+                this.texto = '';
+                this.actualizarLocalStorage();
+            },
+            borrar(posElemento) {
+                this.tareas.splice(posElemento, 1);
+                this.actualizarLocalStorage();
+            },
+            marcarHecha(pos) {
+                this.tareas[pos].completada = !this.tareas[pos].completada;
+                this.actualizarLocalStorage();
+            },
+            cambiarPrioridad(pos, nuevaPrioridad) {
+                this.tareas[pos].prioridad = nuevaPrioridad;
+                this.actualizarLocalStorage();
+            },
+            actualizarLocalStorage() {
+                localStorage.setItem('tareas', JSON.stringify(this.tareas));
+            },
+          },
+          computed: {
+            tareasFiltradas() {
+    if (!this.filtro) {
+        return this.tareas.slice().sort((a, b) => {
+            if (b.prioridad === 'normal' && a.prioridad === 'alta') {
+                return -1;
+            } else if (b.prioridad === 'alta' && a.prioridad === 'normal') {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+    }
+
+    let filtro = this.filtro.toLowerCase();
+
+    let aux = this.tareas.filter(tarea => tarea.texto.toLowerCase().includes(filtro));
+
+    return aux.sort((a, b) => {
+        if (b.prioridad === 'normal' && a.prioridad === 'alta') {
+            return -1; 
+        } else if (b.prioridad === 'alta' && a.prioridad === 'normal') {
+            return 1;  
+        } else {
+            return 0;
+        }
+    });
+},
+
+
+            tareasCompletadas() {
+                return this.tareas.filter(tarea => tarea.completada).length;
+            },
+          },
+          mounted() {
+            const storedTareas = localStorage.getItem('tareas');
+            if (storedTareas) {
+                this.tareas = JSON.parse(storedTareas);
+            }
+          },
+        }).mount('#app');
+    </script>
+</body>
+</html>
